@@ -11,5 +11,10 @@
             "src": "/(.*)",
             "dest": "app/main.py"
         }
-    ]
+    ],
+    "functions": {
+        "api/*.js": {
+            "maxDuration": 80
+        }
+    }
 }

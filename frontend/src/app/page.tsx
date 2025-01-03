@@ -18,7 +18,7 @@ export default function TextPage() {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 55000);
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       const response = await fetch('/api/generate-template', {
         method: 'POST',
@@ -27,6 +27,8 @@ export default function TextPage() {
         },
         body: JSON.stringify({
           description: description,
+          style_preferences: 'simple and minimal', // Add constraints to reduce complexity
+          features: ['basic'], // Limit features
         }),
         signal: controller.signal
       });
@@ -57,7 +59,7 @@ export default function TextPage() {
       console.error('Error:', err);
       if (err instanceof Error) {
         if (err.name === 'AbortError') {
-          setError('Request timed out. Please try again.');
+          setError('Request took too long. Please try with a simpler description.');
         } else {
           setError(err.message);
         }
