@@ -17,6 +17,9 @@ export default function TextPage() {
     setError(null);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 55000);
+
       const response = await fetch('/api/generate-template', {
         method: 'POST',
         headers: {
@@ -25,17 +28,42 @@ export default function TextPage() {
         body: JSON.stringify({
           description: description,
         }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
+      const responseText = await response.text();
+      let data;
+
       if (!response.ok) {
-        throw new Error('Failed to generate template');
+        try {
+          const errorData = JSON.parse(responseText);
+          throw new Error(errorData.detail || 'Failed to generate template');
+        } catch (jsonError) {
+          throw new Error(responseText || `HTTP error! status: ${response.status}`);
+        }
       }
 
-      const data = await response.json();
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonError) {
+        throw new Error('Invalid response format from server');
+      }
+
       localStorage.setItem('generatedTemplate', JSON.stringify(data));
       router.push('/preview');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate template');
+    } catch (err: unknown) {
+      console.error('Error:', err);
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          setError('Request timed out. Please try again.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to generate template');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -1,0 +1,9 @@
+name: alchemix-backend
+services:
+- name: api
+  github:
+    branch: main
+    deploy_on_push: true
+  envs:
+  - key: OPENAI_API_KEY
+    value: "your-api-key" 
