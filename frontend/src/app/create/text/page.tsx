@@ -1,14 +1,48 @@
 'use client';
+
 import React, { useState } from 'react';
+
+interface Template {
+  html: string;
+  css: string;
+  preview: string;
+}
 
 export default function TextPage() {
   const [description, setDescription] = useState('');
-  const [template, setTemplate] = useState(null);
+  const [template, setTemplate] = useState<Template | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: { preventDefault: () => void; }) => {
+  const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
-    // Here you would typically send the description to your template generation API
-    console.log('Generating template from description:', description);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/generate-template', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description: description,
+          type: 'website',
+          format: 'html'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate template');
+      }
+
+      const data = await response.json();
+      setTemplate(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate template');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -37,21 +71,62 @@ export default function TextPage() {
               <div className="space-y-4">
                 <button
                   type="submit"
-                  className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
+                  disabled={isLoading}
+                  className={`w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors ${
+                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  Generate Template
+                  {isLoading ? 'Generating...' : 'Generate Template'}
                 </button>
               </div>
             </form>
+            
+            {error && (
+              <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-lg">
+                {error}
+              </div>
+            )}
           </div>
 
           {/* Preview Section */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-2xl font-bold mb-4">Template Preview</h2>
             {template ? (
-              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                {/* Template preview content */}
-                <img src={template} alt="Generated template" className="w-full h-full object-contain" />
+              <div className="space-y-4">
+                <div 
+                  className="preview-container p-4 border rounded-lg"
+                  dangerouslySetInnerHTML={{ __html: template.html }}
+                />
+                <style>{template.css}</style>
+                
+                <div className="mt-4 space-y-2">
+                  <button
+                    onClick={() => {
+                      const blob = new Blob([template.html], { type: 'text/html' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'template.html';
+                      a.click();
+                    }}
+                    className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
+                  >
+                    Download HTML
+                  </button>
+                  <button
+                    onClick={() => {
+                      const blob = new Blob([template.css], { type: 'text/css' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'styles.css';
+                      a.click();
+                    }}
+                    className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
+                  >
+                    Download CSS
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
