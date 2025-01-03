@@ -1,15 +1,9 @@
 {
-    "buildCommand": "cd frontend && npm run dev",
-    "outputDirectory": "frontend/.next",
-    "framework": "nextjs",
-    "rewrites": [
+    "version": 2,
+    "projects": [
       {
-        "source": "/api/:path*",
-        "destination": "/backend/api/:path*"
-      },
-      {
-        "source": "/ml/:path*",
-        "destination": "/ml/api/:path*"
+        "name": "frontend",
+        "sourceDirectory": "frontend"
       }
     ]
   }

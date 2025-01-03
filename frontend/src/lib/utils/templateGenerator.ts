@@ -1,4 +1,4 @@
-export const generateTemplateFromDrawing = (canvas: HTMLCanvasElement) => {
+export const generateTemplateFromDrawing = (canvas: HTMLCanvasElement): string => {
     const ctx = canvas.getContext('2d');
     if (!ctx) {
         throw new Error('Failed to get canvas context');

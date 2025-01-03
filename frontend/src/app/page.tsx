@@ -41,6 +41,18 @@ export default function TextPage() {
     }
   };
 
+  const handleTemplateGenerate = (template: string) => {
+    // Store the generated template
+    localStorage.setItem('generatedTemplate', JSON.stringify({
+      html: '',  // You might want to generate HTML based on the drawing
+      css: '',   // You might want to generate CSS based on the drawing
+      preview: template
+    }));
+    
+    // Navigate to preview
+    router.push('/preview');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
@@ -111,7 +123,7 @@ export default function TextPage() {
               )}
             </div>
           ) : (
-            <DrawingPad />
+            <DrawingPad onTemplateGenerate={handleTemplateGenerate} />
           )}
         </div>
       </div>

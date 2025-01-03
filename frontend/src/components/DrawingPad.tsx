@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Brush, Eraser, RotateCcw, Download, PenTool } from 'lucide-react';
+import { generateTemplateFromDrawing } from '@/lib/utils/templateGenerator';
 
 interface Tool {
   name: 'brush' | 'eraser';
@@ -9,7 +10,11 @@ interface Tool {
   color: string;
 }
 
-export default function DrawingPad() {
+interface DrawingPadProps {
+  onTemplateGenerate: (template: string) => void;
+}
+
+export default function DrawingPad({ onTemplateGenerate }: DrawingPadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentTool, setCurrentTool] = useState<Tool>({
@@ -141,6 +146,14 @@ export default function DrawingPad() {
     link.href = dataURL;
     link.click();
   };
+
+  const generateTemplate = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const template = generateTemplateFromDrawing(canvas);
+    onTemplateGenerate(template);
+  }, [onTemplateGenerate]);
 
   return (
     <div className="flex flex-col bg-white rounded-lg shadow-lg p-4">

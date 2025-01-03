@@ -73,9 +73,11 @@ export const useCanvas = (
 
   const generateTemplate = useCallback(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+    
     const template = generateTemplateFromDrawing(canvas);
     onTemplateGenerate(template);
-  }, [onTemplateGenerate]);
+  }, [onTemplateGenerate, canvasRef]);
 
   return {
     startDrawing,
