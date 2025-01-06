@@ -18,7 +18,7 @@ export default function TextPage() {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 55000); // Increase timeout to 55 seconds
 
       const response = await fetch('/api/generate-template', {
         method: 'POST',
@@ -27,32 +27,21 @@ export default function TextPage() {
         },
         body: JSON.stringify({
           description: description,
-          style_preferences: 'simple and minimal', // Add constraints to reduce complexity
-          features: ['basic'], // Limit features
+          style_preferences: 'simple and minimal', // Simplify request
+          features: ['basic'], // Reduce features
         }),
-        signal: controller.signal
+        signal: controller.signal,
+        timeout: 55000 // Add timeout
       });
 
       clearTimeout(timeoutId);
 
-      const responseText = await response.text();
-      let data;
-
       if (!response.ok) {
-        try {
-          const errorData = JSON.parse(responseText);
-          throw new Error(errorData.detail || 'Failed to generate template');
-        } catch (jsonError) {
-          throw new Error(responseText || `HTTP error! status: ${response.status}`);
-        }
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP error! status: ${response.status}`);
       }
 
-      try {
-        data = JSON.parse(responseText);
-      } catch (jsonError) {
-        throw new Error('Invalid response format from server');
-      }
-
+      const data = await response.json();
       localStorage.setItem('generatedTemplate', JSON.stringify(data));
       router.push('/preview');
     } catch (err: unknown) {
@@ -141,7 +130,7 @@ export default function TextPage() {
                       isLoading ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
-                    {isLoading ? 'Generating...' : 'Generate Template'}
+                    {isLoading ? 'Generating (this may take up to 1 minute)...' : 'Generate Template'}
                   </button>
                 </div>
               </form>
