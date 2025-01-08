@@ -31,7 +31,6 @@ export default function TextPage() {
           features: ['basic'], // Reduce features
         }),
         signal: controller.signal,
-        timeout: 55000 // Add timeout
       });
 
       clearTimeout(timeoutId);
