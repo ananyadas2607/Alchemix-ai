@@ -117,7 +117,7 @@ input:focus, textarea:focus {
 
 /* Card styles */
 .card {
-  @apply bg-white rounded-xl shadow-soft p-6 transition-all duration-200;
+  @apply bg-white rounded-xl shadow-md p-6 transition-all duration-200;
 }
 
 .card-hover {
@@ -153,4 +153,18 @@ input:focus, textarea:focus {
 /* Container styles */
 .container-custom {
   @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+@keyframes slideUp {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
 }

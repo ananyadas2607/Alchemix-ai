@@ -147,13 +147,11 @@ export default function DrawingPad({ onTemplateGenerate }: DrawingPadProps) {
     link.click();
   };
 
-  const generateTemplate = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const template = generateTemplateFromDrawing(canvas);
+  const handleGenerate = () => {
+    if (!canvasRef.current) return;
+    const template = canvasRef.current.toDataURL('image/png');
     onTemplateGenerate(template);
-  }, [onTemplateGenerate]);
+  };
 
   return (
     <div className="flex flex-col bg-white rounded-lg shadow-lg p-4">
@@ -235,6 +233,13 @@ export default function DrawingPad({ onTemplateGenerate }: DrawingPadProps) {
           <li>Download your sketch</li>
         </ul>
       </div>
+
+      <button
+        onClick={handleGenerate}
+        className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
+      >
+        Generate Template from Drawing
+      </button>
     </div>
   );
 }

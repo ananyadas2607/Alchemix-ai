@@ -59,23 +59,62 @@ export default function TextPage() {
     }
   };
 
-  const handleTemplateGenerate = (template: string) => {
-    // Store the generated template
-    localStorage.setItem('generatedTemplate', JSON.stringify({
-      html: '',  // You might want to generate HTML based on the drawing
-      css: '',   // You might want to generate CSS based on the drawing
-      preview: template
-    }));
-    
-    // Navigate to preview
-    router.push('/preview');
+  const handleTemplateGenerate = async (template: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 55000);
+
+      const response = await fetch('/api/generate-template', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description: "Generate a website based on this layout sketch",
+          style_preferences: 'simple and minimal',
+          features: ['basic'],
+          layout_image: template  // This is the base64 image from the canvas
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      localStorage.setItem('generatedTemplate', JSON.stringify(data));
+      router.push('/preview');
+    } catch (err: unknown) {
+      console.error('Error:', err);
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          setError('Request took too long. Please try with a simpler drawing.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to generate template');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen p-8 bg-gradient-to-br from-purple-50 via-white to-purple-50">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Create Your Website Template</h1>
-        
+        <div className="flex justify-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">
+            Create Your Website Template
+          </h1>
+        </div>
         {/* Custom Tabs */}
         <div className="flex justify-center mb-8">
           <div className="inline-flex bg-white rounded-lg shadow p-1">
@@ -141,7 +180,14 @@ export default function TextPage() {
               )}
             </div>
           ) : (
-            <DrawingPad onTemplateGenerate={handleTemplateGenerate} />
+            <div className="space-y-4">
+              <DrawingPad onTemplateGenerate={handleTemplateGenerate} />
+              {error && (
+                <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-lg">
+                  {error}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
