@@ -1,8 +1,3 @@
-.vercel
-.next
-node_modules
-.env.local
-
 # Python virtual environment
 venv/
 env/
@@ -42,3 +37,12 @@ coverage.xml
 *.log
 .pytest_cache/
 .python-version
+
+# IDE
+.vscode/
+.idea/
+
+# Local development
+*.sqlite3
+.DS_Store
+.vercel
