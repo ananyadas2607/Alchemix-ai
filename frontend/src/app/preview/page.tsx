@@ -14,7 +14,7 @@ interface Template {
 
 declare global {
   interface Window {
-    removeSection: (sectionClass: string) => void;
+    removeSection?: (sectionId: string) => void;
   }
 }
 
@@ -23,26 +23,28 @@ const commonStyles = `
     position: absolute;
     top: 1rem;
     right: 1rem;
-    width: 2rem;
-    height: 2rem;
+    width: 2.5rem;
+    height: 2.5rem;
     border-radius: 50%;
     background-color: rgba(255, 255, 255, 0.9);
     border: 1px solid #e5e7eb;
     color: #4b5563;
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s;
     opacity: 0;
-    z-index: 10;
+    z-index: 50;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
   .remove-section-btn:hover {
     background-color: #ef4444;
     color: white;
     border-color: #ef4444;
+    transform: scale(1.05);
   }
   
   section:hover .remove-section-btn {
@@ -51,6 +53,28 @@ const commonStyles = `
   
   section {
     position: relative;
+  }
+
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+  }
+
+  .animate-fade-in-out {
+    animation: fadeInOut 2s ease-in-out forwards;
+  }
+`;
+
+const aiChatStyles = `
+  .ai-chat-container {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 `;
 
@@ -90,8 +114,13 @@ export default function PreviewPage() {
       }
     }
 
-    // Expose removeSection function to window object
+    // Bind removeSection to window
     window.removeSection = removeSection;
+
+    // Cleanup
+    return () => {
+      delete window.removeSection;
+    };
   }, []);
 
   const handleSuggestion = async (suggestion: string) => {
@@ -102,7 +131,6 @@ export default function PreviewPage() {
       const parser = new DOMParser();
       const doc = parser.parseFromString(template.html, 'text/html');
 
-      // Extract the section type from the suggestion
       const sectionType = suggestion.toLowerCase().includes('hero') ? 'hero' :
                          suggestion.toLowerCase().includes('features') ? 'features' :
                          suggestion.toLowerCase().includes('testimonials') ? 'testimonials' :
@@ -111,119 +139,60 @@ export default function PreviewPage() {
 
       if (!sectionType) return;
 
-      // Add the new section HTML based on type
       const newSection = document.createElement('section');
-      newSection.className = `${sectionType}-section`;
+      const sectionId = `section-${Date.now()}`;
+      newSection.id = sectionId;
+      newSection.className = `${sectionType}-section relative`;
       
-      switch(sectionType) {
-        case 'hero':
-          newSection.innerHTML = `
-            <div class="container mx-auto px-4 py-16">
-              <h1 class="text-4xl font-bold mb-4">Welcome to Our Website</h1>
-              <p class="text-lg mb-8">Discover amazing features and services</p>
-              <img src="https://picsum.photos/1200/600" alt="Hero image" class="w-full rounded-lg shadow-lg">
-            </div>
-          `;
-          doc.body.insertBefore(newSection, doc.body.firstChild);
-          break;
-        
-        case 'features':
-          newSection.innerHTML = `
-            <div class="container mx-auto px-4 py-16">
-              <h2 class="text-3xl font-bold mb-8 text-center">Our Features</h2>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="p-6 bg-white rounded-lg shadow-lg">
-                  <img src="https://picsum.photos/400/300?random=1" alt="Feature 1" class="w-full rounded-lg mb-4">
-                  <h3 class="text-xl font-semibold mb-2">Feature 1</h3>
-                  <p>Description of feature 1</p>
-                </div>
-                <div class="p-6 bg-white rounded-lg shadow-lg">
-                  <img src="https://picsum.photos/400/300?random=2" alt="Feature 2" class="w-full rounded-lg mb-4">
-                  <h3 class="text-xl font-semibold mb-2">Feature 2</h3>
-                  <p>Description of feature 2</p>
-                </div>
-                <div class="p-6 bg-white rounded-lg shadow-lg">
-                  <img src="https://picsum.photos/400/300?random=3" alt="Feature 3" class="w-full rounded-lg mb-4">
-                  <h3 class="text-xl font-semibold mb-2">Feature 3</h3>
-                  <p>Description of feature 3</p>
-                </div>
+      let sectionContent = `
+        <button 
+          onclick="window.removeSection('${sectionId}')" 
+          class="remove-section-btn" 
+          title="Remove section"
+          aria-label="Remove section"
+        >
+          ×
+        </button>
+        <div class="container mx-auto px-4 py-16">
+          ${sectionType === 'hero' ? `
+            <h1 class="text-4xl font-bold mb-4">Welcome to Our Website</h1>
+            <p class="text-lg mb-8">Discover amazing features and services</p>
+            <img src="https://picsum.photos/1200/600" alt="Hero image" class="w-full rounded-lg shadow-lg">
+          ` : sectionType === 'features' ? `
+            <h2 class="text-3xl font-bold mb-8 text-center">Our Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div class="p-6 bg-white rounded-lg shadow-lg">
+                <h3 class="text-xl font-semibold mb-2">Feature 1</h3>
+                <p>Description of feature 1</p>
+              </div>
+              <div class="p-6 bg-white rounded-lg shadow-lg">
+                <h3 class="text-xl font-semibold mb-2">Feature 2</h3>
+                <p>Description of feature 2</p>
+              </div>
+              <div class="p-6 bg-white rounded-lg shadow-lg">
+                <h3 class="text-xl font-semibold mb-2">Feature 3</h3>
+                <p>Description of feature 3</p>
               </div>
             </div>
-          `;
-          doc.body.appendChild(newSection);
-          break;
+          ` : ''}
+        </div>
+      `;
 
-        case 'testimonials':
-          newSection.innerHTML = `
-            <div class="container mx-auto px-4 py-16 bg-gray-50">
-              <h2 class="text-3xl font-bold mb-8 text-center">What Our Clients Say</h2>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="p-6 bg-white rounded-lg shadow-lg">
-                  <img src="https://picsum.photos/100/100?random=4" alt="Client 1" class="w-16 h-16 rounded-full mb-4">
-                  <p class="mb-4">"Amazing service and great results!"</p>
-                  <p class="font-semibold">- John Doe</p>
-                </div>
-                <div class="p-6 bg-white rounded-lg shadow-lg">
-                  <img src="https://picsum.photos/100/100?random=5" alt="Client 2" class="w-16 h-16 rounded-full mb-4">
-                  <p class="mb-4">"Exceeded our expectations!"</p>
-                  <p class="font-semibold">- Jane Smith</p>
-                </div>
-              </div>
-            </div>
-          `;
-          doc.body.appendChild(newSection);
-          break;
+      newSection.innerHTML = sectionContent;
 
-        case 'gallery':
-          newSection.innerHTML = `
-            <div class="container mx-auto px-4 py-16">
-              <h2 class="text-3xl font-bold mb-8 text-center">Our Gallery</h2>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <img src="https://picsum.photos/400/400?random=6" alt="Gallery 1" class="w-full rounded-lg">
-                <img src="https://picsum.photos/400/400?random=7" alt="Gallery 2" class="w-full rounded-lg">
-                <img src="https://picsum.photos/400/400?random=8" alt="Gallery 3" class="w-full rounded-lg">
-                <img src="https://picsum.photos/400/400?random=9" alt="Gallery 4" class="w-full rounded-lg">
-              </div>
-            </div>
-          `;
-          doc.body.appendChild(newSection);
-          break;
-
-        case 'contact':
-          newSection.innerHTML = `
-            <div class="container mx-auto px-4 py-16">
-              <h2 class="text-3xl font-bold mb-8 text-center">Contact Us</h2>
-              <div class="max-w-lg mx-auto">
-                <form class="space-y-4">
-                  <div>
-                    <label class="block mb-2">Name</label>
-                    <input type="text" class="w-full px-4 py-2 rounded-lg border">
-                  </div>
-                  <div>
-                    <label class="block mb-2">Email</label>
-                    <input type="email" class="w-full px-4 py-2 rounded-lg border">
-                  </div>
-                  <div>
-                    <label class="block mb-2">Message</label>
-                    <textarea class="w-full px-4 py-2 rounded-lg border" rows="4"></textarea>
-                  </div>
-                  <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg">Send Message</button>
-                </form>
-              </div>
-            </div>
-          `;
-          doc.body.appendChild(newSection);
-          break;
+      if (sectionType === 'hero') {
+        doc.body.insertBefore(newSection, doc.body.firstChild);
+      } else {
+        doc.body.appendChild(newSection);
       }
 
-      // Update the template with the new HTML
-      const updatedTemplate: Template = {
-        html: doc.documentElement.outerHTML,
-        css: template.css
+      const updatedTemplate = {
+        ...template,
+        html: doc.body.innerHTML
       };
 
       setTemplate(updatedTemplate);
-      localStorage.setItem('currentTemplate', JSON.stringify(updatedTemplate));
+      localStorage.setItem('generatedTemplate', JSON.stringify(updatedTemplate));
     } catch (error) {
       console.error('Error updating template:', error);
     } finally {
@@ -330,25 +299,102 @@ export default function PreviewPage() {
     setShowAIChat(prev => !prev);
   };
 
-  const removeSection = (sectionClass: string) => {
-    if (!template) return;
+  const syncTemplateWithBackend = async (templateData: Template) => {
+    try {
+      const response = await fetch('/api/template/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(templateData)
+      });
 
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(template.html, 'text/html');
+      if (!response.ok) {
+        throw new Error('Failed to sync template with backend');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error syncing with backend:', error);
+      throw error;
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!template) return;
     
-    // Find and remove the section
-    const sectionToRemove = doc.querySelector(`.${sectionClass}`);
-    if (sectionToRemove) {
-      sectionToRemove.remove();
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(template.html, 'text/html');
       
-      // Update the template
-      const updatedTemplate = {
-        ...template,
-        html: doc.body.innerHTML
-      };
+      const sections = doc.getElementsByTagName('section');
       
-      setTemplate(updatedTemplate);
-      localStorage.setItem('generatedTemplate', JSON.stringify(updatedTemplate));
+      if (sections.length > 0) {
+        const lastSection = sections[sections.length - 1];
+        lastSection.remove();
+        
+        const updatedTemplate = {
+          ...template,
+          html: doc.body.innerHTML
+        };
+        
+        // Update local state
+        setTemplate(updatedTemplate);
+        localStorage.setItem('generatedTemplate', JSON.stringify(updatedTemplate));
+
+        // Sync with backend
+        await syncTemplateWithBackend(updatedTemplate);
+
+        // Show feedback
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'fixed bottom-24 right-4 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in-out';
+        feedbackDiv.textContent = 'Changes undone successfully';
+        document.body.appendChild(feedbackDiv);
+
+        setTimeout(() => {
+          feedbackDiv.remove();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error undoing changes:', error);
+    }
+  };
+
+  const removeSection = async (sectionId: string) => {
+    if (!template) return;
+    
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(template.html, 'text/html');
+      
+      const sectionToRemove = doc.getElementById(sectionId);
+      if (sectionToRemove) {
+        sectionToRemove.remove();
+        
+        const updatedTemplate = {
+          ...template,
+          html: doc.body.innerHTML
+        };
+        
+        // Update local state
+        setTemplate(updatedTemplate);
+        localStorage.setItem('generatedTemplate', JSON.stringify(updatedTemplate));
+
+        // Sync with backend
+        await syncTemplateWithBackend(updatedTemplate);
+
+        // Show feedback
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'fixed bottom-24 right-4 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in-out';
+        feedbackDiv.textContent = 'Section removed successfully';
+        document.body.appendChild(feedbackDiv);
+
+        setTimeout(() => {
+          feedbackDiv.remove();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error removing section:', error);
     }
   };
 
@@ -489,6 +535,7 @@ export default function PreviewPage() {
             onSuggestionAccept={handleSuggestion}
             onClose={() => setShowAIChat(false)}
             isGenerating={isGenerating}
+            onUndo={handleUndo}
           />
         </div>
       )}
@@ -502,6 +549,12 @@ export default function PreviewPage() {
           <Bot className="w-6 h-6" />
         </button>
       )}
+
+      {/* Add the styles */}
+      <style>
+        {commonStyles}
+        {aiChatStyles}
+      </style>
     </div>
   );
 }
