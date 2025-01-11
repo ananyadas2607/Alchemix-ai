@@ -12,60 +12,48 @@ router = APIRouter()
 @router.post("/generate-template", response_model=WebsiteResponse)
 async def generate_template(request: WebsiteRequest):
     try:
-        logger.info(f"Received template generation request for business type: {request.business_type}")
+        logger.info(f"Received template generation request: {request.description}")
+        if request.layout_image:
+            logger.info("Layout image provided")
         
         # Initialize template service
         template_service = TemplateGeneratorService()
         
-        # Create the prompt for the template generation
-        prompt = f"""
-        Create a modern, responsive website for a {request.business_type} with the following description:
-        {request.description}
-        
-        Style preferences: {request.style_preferences}
-        Features requested: {', '.join(request.features)}
-        
-        Please include:
-        - A clean, modern design
-        - Responsive layout using modern CSS (flexbox/grid)
-        - Semantic HTML5 elements
-        - Interactive elements
-        - Proper spacing and typography
-        
-        Return the complete HTML and CSS code in the following format:
-        
-        HTML:
-        ```html
-        [Your HTML code here]
-        ```
-        
-        CSS:
-        ```css
-        [Your CSS code here]
-        ```
-        """
-        
-        # Generate the template using Claude
-        logger.info("Calling Claude API for template generation")
-        generated_content = await template_service.generate_template(prompt)
+        # Generate the template
+        generated_content = await template_service.generate_template(
+            description=request.description,
+            layout_image=request.layout_image
+        )
+        logger.info("Template generated successfully")
         
         # Parse the response to extract HTML and CSS
         try:
             # Split the content into HTML and CSS sections
-            html_section = generated_content.split("```html")[1].split("```")[0].strip()
-            css_section = generated_content.split("```css")[1].split("```")[0].strip()
+            html_parts = generated_content.split("```html")
+            if len(html_parts) < 2:
+                raise ValueError("Could not find HTML section in response")
+            
+            html_section = html_parts[1].split("```")[0].strip()
+            
+            css_parts = generated_content.split("```css")
+            if len(css_parts) < 2:
+                raise ValueError("Could not find CSS section in response")
+                
+            css_section = css_parts[1].split("```")[0].strip()
+            
+            logger.info("Successfully parsed HTML and CSS sections")
             
             return {
                 "html": html_section,
                 "css": css_section,
-                "preview": "preview_url"
+                "preview": "preview_url"  # Placeholder for preview URL
             }
         except Exception as parsing_error:
             logger.error(f"Error parsing Claude response: {parsing_error}")
-            logger.debug(f"Raw content: {generated_content}")
+            logger.error(f"Raw content: {generated_content}")
             raise HTTPException(
                 status_code=500,
-                detail="Failed to parse the generated template. Please try again."
+                detail=f"Failed to parse the generated template: {str(parsing_error)}"
             )
             
     except ValueError as ve:

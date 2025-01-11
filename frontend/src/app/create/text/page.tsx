@@ -1,18 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-
-interface Template {
-  html: string;
-  css: string;
-  preview: string;
-}
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Send } from 'lucide-react';
 
 export default function TextPage() {
   const [description, setDescription] = useState('');
-  const [template, setTemplate] = useState<Template | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
@@ -20,6 +16,9 @@ export default function TextPage() {
     setError(null);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 55000);
+
       const response = await fetch('/api/generate-template', {
         method: 'POST',
         headers: {
@@ -27,115 +26,74 @@ export default function TextPage() {
         },
         body: JSON.stringify({
           description: description,
-          type: 'website',
-          format: 'html'
+          style_preferences: 'simple and minimal',
+          features: ['basic'],
         }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error('Failed to generate template');
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      setTemplate(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate template');
+      localStorage.setItem('generatedTemplate', JSON.stringify(data));
+      router.push('/preview');
+    } catch (err: unknown) {
+      console.error('Error:', err);
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          setError('Request took too long. Please try with a simpler description.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('Failed to generate template');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8">Describe Your Template</h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Input Section */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <form onSubmit={handleSubmit}>
-              <div className="mb-6">
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Template Description
-                </label>
-                <textarea
-                  id="description"
-                  rows={8}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                  placeholder="Describe your website template here... (e.g., 'I want a modern landing page with a hero section, feature grid, and contact form')"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                ></textarea>
-              </div>
-              
-              <div className="space-y-4">
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors ${
-                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {isLoading ? 'Generating...' : 'Generate Template'}
-                </button>
-              </div>
-            </form>
-            
-            {error && (
-              <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-lg">
-                {error}
-              </div>
-            )}
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-purple-900">
+      <div className="max-w-4xl mx-auto px-4 py-16">
+        <div className="bg-gray-900/50 backdrop-blur-lg rounded-2xl p-8 shadow-xl border border-gray-800">
+          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-300 mb-6">
+            Describe Your Website
+          </h1>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <textarea
+                rows={6}
+                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="Describe your dream website... (e.g., 'Create a modern landing page for a tech startup with a hero section, feature highlights, and a contact form')"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              ></textarea>
+            </div>
 
-          {/* Preview Section */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4">Template Preview</h2>
-            {template ? (
-              <div className="space-y-4">
-                <div 
-                  className="preview-container p-4 border rounded-lg"
-                  dangerouslySetInnerHTML={{ __html: template.html }}
-                />
-                <style>{template.css}</style>
-                
-                <div className="mt-4 space-y-2">
-                  <button
-                    onClick={() => {
-                      const blob = new Blob([template.html], { type: 'text/html' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = 'template.html';
-                      a.click();
-                    }}
-                    className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
-                  >
-                    Download HTML
-                  </button>
-                  <button
-                    onClick={() => {
-                      const blob = new Blob([template.css], { type: 'text/css' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = 'styles.css';
-                      a.click();
-                    }}
-                    className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200"
-                  >
-                    Download CSS
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500">
-                  Your template preview will appear here
-                </p>
-              </div>
-            )}
-          </div>
+            <div className="flex items-center gap-4">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-500 hover:to-purple-700 text-white rounded-xl font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                <Send className="w-5 h-5" />
+                {isLoading ? 'Generating...' : 'Generate Template'}
+              </button>
+            </div>
+          </form>
+
+          {error && (
+            <div className="mt-6 p-4 bg-red-900/50 border border-red-800 rounded-xl text-red-200">
+              {error}
+            </div>
+          )}
         </div>
       </div>
     </div>
