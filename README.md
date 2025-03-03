@@ -1,28 +1,7 @@
-To run the frontend:
+Design:
 
-# Frontend
-cd frontend
-npm run dev
+<img width="558" alt="Screenshot 2025-03-02 at 8 00 49 PM" src="https://github.com/user-attachments/assets/d98e40ad-04bc-4be5-a8b6-7386e5b0fea2" />
 
-# Backend
-cd backend
-python manage.py runserver
-
-# ML Service
-cd ml
-python app.py
-
-Contributing
-Instructions for potential contributors:
-
-- Fork the repository
-- Create a feature branch
-- Commit changes
-- Push to the branch
-- Open a Pull Request
-
-License
-This project is licensed under the MIT License
 
 Contact
 
